@@ -1,0 +1,1 @@
+# automaçõe para o discord
