@@ -73,7 +73,7 @@ jobs:
               "disable_web_page_preview": True,
           }
           if thread_id:
-              payload["message_thread_id"] = thread_id
+              payload["message_thread_id"] = 6
 
           with httpx.Client(timeout=20.0, follow_redirects=True) as client:
               r = client.post(api, data=payload)
