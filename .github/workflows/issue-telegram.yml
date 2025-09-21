@@ -16,7 +16,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: "3.x"
 
       - name: Install httpx
         run: |
@@ -25,15 +25,16 @@ jobs:
 
       - name: Send Telegram (via script .py)
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          # ajuste conforme necessário:
-          TELEGRAM_CHAT_ID: "-1002597220683"
-          TELEGRAM_THREAD_ID: "6"
-          ISSUE_TITLE: ${{ github.event.issue.title }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          ISSUE_URL: ${{ github.event.issue.html_url }}
-          ISSUE_USER: ${{ github.event.issue.user.login }}
-          ISSUE_BODY: ${{ github.event.issue.body }}
-          REPO: ${{ github.repository }}
+          env:
+            TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+            TELEGRAM_CHAT_ID: "-1002597220683"
+            TELEGRAM_THREAD_ID: "6"
+            MESSAGE: "hello" # ou omita e deixe montar via ISSUE_*
+            ISSUE_TITLE: ${{ github.event.issue.title }}
+            ISSUE_NUMBER: ${{ github.event.issue.number }}
+            ISSUE_URL: ${{ github.event.issue.html_url }}
+            ISSUE_USER: ${{ github.event.issue.user.login }}
+            ISSUE_BODY: ${{ github.event.issue.body }}
+            REPO: ${{ github.repository }}
         run: |
           python automations/telegram/issue.py
