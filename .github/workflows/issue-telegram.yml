@@ -40,6 +40,19 @@ jobs:
         id: compose
         shell: bash
         run: |
+          set -euo pipefail
+
+          write_output() {
+            # uso: write_output chave "valor possivelmente multilinha"
+            local key="$1"; shift
+            local delim="__GH_OUT_$(openssl rand -hex 8)__"
+            {
+              printf '%s<<%s\n' "$key" "$delim"
+              cat
+              printf '%s\n' "$delim"
+            } >> "$GITHUB_OUTPUT"
+          }
+
           EVENT="${{ github.event_name }}"
           ACTION="${{ github.event.action }}"
 
@@ -51,30 +64,21 @@ jobs:
             BODY='${{ github.event.issue.body }}'
 
             case "$ACTION" in
-              opened)
-                MSG="🔔 Nova issue #$NUMBER aberta por $USER: $TITLE\n$URL"
-                ;;
-              closed)
-                MSG="✅ Issue #$NUMBER fechada por $USER\n$URL"
-                ;;
-              reopened)
-                MSG="♻️ Issue #$NUMBER reaberta por $USER\n$URL"
-                ;;
-              *)
-                MSG="ℹ️ Issue #$NUMBER atualizada por $USER: $TITLE\n$URL"
-                ;;
+              opened)   MSG="🔔 Nova issue #$NUMBER aberta por $USER: $TITLE\n$URL" ;;
+              closed)   MSG="✅ Issue #$NUMBER fechada por $USER\n$URL" ;;
+              reopened) MSG="♻️ Issue #$NUMBER reaberta por $USER\n$URL" ;;
+              *)        MSG="ℹ️ Issue #$NUMBER atualizada por $USER: $TITLE\n$URL" ;;
             esac
 
-            echo "issue_title=$TITLE" >> $GITHUB_OUTPUT
-            echo "issue_number=$NUMBER" >> $GITHUB_OUTPUT
-            echo "issue_url=$URL" >> $GITHUB_OUTPUT
-            echo "issue_user=$USER" >> $GITHUB_OUTPUT
-            # Corpo pode ser multilinha; usa heredoc
-            {
-              echo "issue_body<<'EOF'"
-              printf "%s\n" "$BODY"
-              echo "EOF"
-            } >> "$GITHUB_OUTPUT"
+            printf '%s' "$TITLE"  | write_output issue_title
+            printf '%s' "$NUMBER" | write_output issue_number
+            printf '%s' "$URL"    | write_output issue_url
+            printf '%s' "$USER"   | write_output issue_user
+            printf '%s' "$BODY"   | write_output issue_body
+
+            # labels (como JSON simples de strings)
+            jq -r '[.issue.labels[].name] | @json' "${GITHUB_EVENT_PATH}" \
+              | write_output issue_labels_json || printf '[]' | write_output issue_labels_json
 
           elif [ "$EVENT" = "issue_comment" ]; then
             NUMBER='${{ github.event.issue.number }}'
@@ -82,36 +86,21 @@ jobs:
             USER='${{ github.event.comment.user.login }}'
             BODY_RAW='${{ github.event.comment.body }}'
 
-            # Limita o preview do comentário para evitar mensagens enormes
             BODY_PREVIEW=$(printf "%s" "$BODY_RAW" | head -c 280)
-            MSG="💬 Novo comentário na issue #$NUMBER por $USER:"
-            MSG="$MSG\n\"$BODY_PREVIEW\""
-            MSG="$MSG\n$URL"
+            MSG="💬 Novo comentário na issue #$NUMBER por $USER:\n\"$BODY_PREVIEW\"\n$URL"
 
-            echo "comment_user=$USER" >> $GITHUB_OUTPUT
-            # passa corpo completo também, se quiser usar no script
-            {
-              echo "comment_body<<'EOF'"
-              printf "%s\n" "$BODY_RAW"
-              echo "EOF"
-            } >> "$GITHUB_OUTPUT"
+            printf '%s' "$USER"      | write_output comment_user
+            printf '%s' "$BODY_RAW"  | write_output comment_body
+            printf '%s' "$NUMBER"    | write_output issue_number
+            printf '%s' "${{ github.event.issue.html_url }}" | write_output issue_url
+            printf '%s' "${{ github.event.issue.title }}"    | write_output issue_title
+            printf '%s' "${{ github.event.issue.body }}"     | write_output issue_body
 
-            echo "issue_number=$NUMBER" >> $GITHUB_OUTPUT
-            echo "issue_url=${{ github.event.issue.html_url }}" >> $GITHUB_OUTPUT
-            echo "issue_title=${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
-            {
-              echo "issue_body<<'EOF'"
-              printf "%s\n" '${{ github.event.issue.body }}'
-              echo "EOF"
-            } >> "$GITHUB_OUTPUT"
+            jq -r '[.issue.labels[].name] | @json' "${GITHUB_EVENT_PATH}" \
+              | write_output issue_labels_json || printf '[]' | write_output issue_labels_json
           fi
 
-          # Exporta a mensagem final
-          {
-            echo "message<<'EOF'"
-            printf "%b\n" "$MSG"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          printf "%b" "$MSG" | write_output message
 
       - name: Send Telegram (via script .py)
         env:
