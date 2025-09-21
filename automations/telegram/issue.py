@@ -1,26 +1,104 @@
 #!/usr/bin/env python3
-# scripts/test_telegram_httpx.py
+# automations/telegram/issue.py
 # Envia uma notificação para o Telegram usando httpx.
 # Variáveis de ambiente suportadas:
 # - TELEGRAM_BOT_TOKEN (obrigatório)
 # - TELEGRAM_CHAT_ID (default: -1002597220683)
 # - TELEGRAM_THREAD_ID (default: 6; use vazio para não enviar em thread)
-# - MESSAGE (default: "hello")
-# Opcionalmente, pode montar a mensagem a partir de dados de issue:
+# - MESSAGE (opcional; se presente, é usada como mensagem base)
+# - APPEND_LABELS_TO_MESSAGE ("true"/"1" para anexar labels ao MESSAGE)
+#
+# Para montar mensagens automaticamente a partir de dados da issue:
 # - ISSUE_TITLE, ISSUE_NUMBER, ISSUE_URL, ISSUE_USER, ISSUE_BODY, REPO
+# - ISSUE_LABELS (opcional: CSV "bug,help wanted" ou JSON
+#   '["bug","help wanted"]' ou '[{"name":"bug"},{"name":"help wanted"}]')
+#
+# Se ISSUE_LABELS não for informado, o script tenta ler labels do payload
+# do GitHub Actions via GITHUB_EVENT_PATH.
 
 import os
 import sys
 import html
 import textwrap
+import json
 import httpx
+from typing import List, Any
 
 API_BASE = "https://api.telegram.org"
 
+def _as_bool(val: str | None) -> bool:
+    return str(val).lower() in {"1", "true", "yes", "y"}
+
+def _escape(s: str | None) -> str:
+    return html.escape(s or "")
+
+def _from_env_issue_labels() -> List[str]:
+    raw = os.getenv("ISSUE_LABELS")
+    if not raw:
+        return []
+    # Tenta JSON primeiro
+    try:
+        data: Any = json.loads(raw)
+        if isinstance(data, list):
+            names: List[str] = []
+            for item in data:
+                if isinstance(item, str):
+                    names.append(item)
+                elif isinstance(item, dict) and "name" in item:
+                    names.append(str(item["name"]))
+            return [n for n in (x.strip() for x in names) if n]
+    except json.JSONDecodeError:
+        pass
+
+    # CSV simples
+    parts = [p.strip() for p in raw.split(",") if p.strip()]
+    return parts
+
+def _from_event_payload_labels() -> List[str]:
+    """Lê labels do arquivo JSON do evento do GitHub (GITHUB_EVENT_PATH)."""
+    path = os.getenv("GITHUB_EVENT_PATH")
+    if not path or not os.path.isfile(path):
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            payload = json.load(f)
+        issue = payload.get("issue") or {}
+        labels = issue.get("labels") or []
+        names: List[str] = []
+        for lb in labels:
+            if isinstance(lb, dict) and "name" in lb:
+                names.append(str(lb["name"]))
+            elif isinstance(lb, str):
+                names.append(lb)
+        return [n for n in (x.strip() for x in names) if n]
+    except Exception:
+        return []
+
+def get_issue_labels() -> List[str]:
+    # 1) via env ISSUE_LABELS (CSV/JSON)
+    labels = _from_env_issue_labels()
+    if labels:
+        return labels
+    # 2) via payload do evento
+    labels = _from_event_payload_labels()
+    return labels
+
+def _labels_line() -> str:
+    labels = get_issue_labels()
+    if not labels:
+        return "🏷️ Labels: (nenhum)"
+    # Evita mensagens gigantes: limita a ~10 labels
+    MAX = 10
+    listed = labels[:MAX]
+    suffix = " …" if len(labels) > MAX else ""
+    return f"🏷️ Labels: {', '.join(_escape(x) for x in listed)}{suffix}"
+
 def build_message() -> str:
-    # Se MESSAGE estiver definido, usa direto
+    # Se MESSAGE estiver definido, usa direto (com opção de anexar labels)
     direct = os.getenv("MESSAGE")
     if direct:
+        if _as_bool(os.getenv("APPEND_LABELS_TO_MESSAGE")):
+            return f"{direct}\n\n{_labels_line()}"
         return direct
 
     # Caso contrário, tenta montar com dados de issue (se existirem)
@@ -34,15 +112,16 @@ def build_message() -> str:
     if any([title, number, url, user, repo, body]):
         if len(body) > 700:
             body = body[:700] + "…"
-        esc = lambda s: html.escape(s or "")
+        labels_line = _labels_line()
         return textwrap.dedent(f"""
-        🆕 <b>Issue aberta</b> em <b>{esc(repo or '(repo?)')}</b>
-        <b>#{esc(str(number or '?'))}</b>: {esc(title or '(sem título)')}
-        👤 Autor: {esc(user or '?')}
-        🔗 <a href="{esc(url or '')}">{esc(url or '')}</a>
+        🆕 <b>Issue</b> em <b>{_escape(repo or '(repo?)')}</b>
+        <b>#{_escape(str(number or '?'))}</b>: {_escape(title or '(sem título)')}
+        👤 Autor: {_escape(user or '?')}
+        {labels_line}
+        🔗 <a href="{_escape(url or '')}">{_escape(url or '')}</a>
 
         <b>Descrição</b>:
-        {esc(body) if body else '(sem descrição)'}
+        {_escape(body) if body else '(sem descrição)'}
         """).strip()
 
     # Fallback final

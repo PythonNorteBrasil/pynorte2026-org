@@ -1,14 +1,26 @@
-name: Notify Telegram on Issue Opened
+name: Notify Telegram on Issue + Comments
 
 on:
   issues:
-    types: [opened]
+    types: [opened, closed, reopened]
+  issue_comment:
+    types: [created]
 
 jobs:
   notify-telegram:
+    # Permite qualquer evento de "issues" e, no caso de "issue_comment",
+    # só segue se NÃO for comentário em PR.
+    if: ${{ github.event_name != 'issue_comment' || github.event.issue.pull_request == null }}
     runs-on: ubuntu-latest
     permissions:
       issues: read
+
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: "-1002597220683"   # opcional: mova p/ secrets
+      TELEGRAM_THREAD_ID: "6"              # opcional: remova se não usar tópicos
+      REPO: ${{ github.repository }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,17 +35,107 @@ jobs:
           python -m pip install --upgrade pip
           pip install httpx
 
+      # Monta a mensagem e dados específicos conforme o evento
+      - name: Compose Telegram message
+        id: compose
+        shell: bash
+        run: |
+          EVENT="${{ github.event_name }}"
+          ACTION="${{ github.event.action }}"
+
+          if [ "$EVENT" = "issues" ]; then
+            NUMBER='${{ github.event.issue.number }}'
+            TITLE='${{ github.event.issue.title }}'
+            URL='${{ github.event.issue.html_url }}'
+            USER='${{ github.event.sender.login }}'
+            BODY='${{ github.event.issue.body }}'
+
+            case "$ACTION" in
+              opened)
+                MSG="🔔 Nova issue #$NUMBER aberta por $USER: $TITLE\n$URL"
+                ;;
+              closed)
+                MSG="✅ Issue #$NUMBER fechada por $USER\n$URL"
+                ;;
+              reopened)
+                MSG="♻️ Issue #$NUMBER reaberta por $USER\n$URL"
+                ;;
+              *)
+                MSG="ℹ️ Issue #$NUMBER atualizada por $USER: $TITLE\n$URL"
+                ;;
+            esac
+
+            echo "issue_title=$TITLE" >> $GITHUB_OUTPUT
+            echo "issue_number=$NUMBER" >> $GITHUB_OUTPUT
+            echo "issue_url=$URL" >> $GITHUB_OUTPUT
+            echo "issue_user=$USER" >> $GITHUB_OUTPUT
+            # Corpo pode ser multilinha; usa heredoc
+            {
+              echo "issue_body<<'EOF'"
+              printf "%s\n" "$BODY"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+
+          elif [ "$EVENT" = "issue_comment" ]; then
+            NUMBER='${{ github.event.issue.number }}'
+            URL='${{ github.event.comment.html_url }}'
+            USER='${{ github.event.comment.user.login }}'
+            BODY_RAW='${{ github.event.comment.body }}'
+
+            # Limita o preview do comentário para evitar mensagens enormes
+            BODY_PREVIEW=$(printf "%s" "$BODY_RAW" | head -c 280)
+            MSG="💬 Novo comentário na issue #$NUMBER por $USER:"
+            MSG="$MSG\n\"$BODY_PREVIEW\""
+            MSG="$MSG\n$URL"
+
+            echo "comment_user=$USER" >> $GITHUB_OUTPUT
+            # passa corpo completo também, se quiser usar no script
+            {
+              echo "comment_body<<'EOF'"
+              printf "%s\n" "$BODY_RAW"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+
+            echo "issue_number=$NUMBER" >> $GITHUB_OUTPUT
+            echo "issue_url=${{ github.event.issue.html_url }}" >> $GITHUB_OUTPUT
+            echo "issue_title=${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
+            {
+              echo "issue_body<<'EOF'"
+              printf "%s\n" '${{ github.event.issue.body }}'
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+          # Exporta a mensagem final
+          {
+            echo "message<<'EOF'"
+            printf "%b\n" "$MSG"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Send Telegram (via script .py)
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: "-1002597220683"
-          TELEGRAM_THREAD_ID: "6"
-          MESSAGE: "🔔 Nova issue #${{ github.event.issue.number }} aberta por ${{ github.event.issue.user.login }}: ${{ github.event.issue.title }}"
-          ISSUE_TITLE: ${{ github.event.issue.title }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          ISSUE_URL: ${{ github.event.issue.html_url }}
-          ISSUE_USER: ${{ github.event.issue.user.login }}
-          ISSUE_BODY: ${{ github.event.issue.body }}
-          REPO: ${{ github.repository }}
+          TELEGRAM_BOT_TOKEN: ${{ env.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ env.TELEGRAM_CHAT_ID }}
+          TELEGRAM_THREAD_ID: ${{ env.TELEGRAM_THREAD_ID }}
+
+          MESSAGE: ${{ steps.compose.outputs.message }}
+
+          # Dados da issue (sempre disponíveis)
+          ISSUE_TITLE: ${{ steps.compose.outputs.issue_title }}
+          ISSUE_NUMBER: ${{ steps.compose.outputs.issue_number }}
+          ISSUE_URL:    ${{ steps.compose.outputs.issue_url }}
+          ISSUE_USER:   ${{ steps.compose.outputs.issue_user }}
+          ISSUE_BODY:   ${{ steps.compose.outputs.issue_body }}
+
+          # Dados de comentário (presentes só no evento issue_comment)
+          COMMENT_USER: ${{ steps.compose.outputs.comment_user }}
+          COMMENT_BODY: ${{ steps.compose.outputs.comment_body }}
+
+          # Metadados úteis
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_ACTION: ${{ github.event.action }}
+          REPO: ${{ env.REPO }}
+          APPEND_LABELS_TO_MESSAGE: "true"
         run: |
           python automations/telegram/issue.py
