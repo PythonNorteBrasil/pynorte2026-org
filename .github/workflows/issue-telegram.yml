@@ -2,7 +2,7 @@ name: Notify Telegram on Issue Opened
 
 on:
   issues:
-    types: [opened]  # adicione reopened/edited se quiser
+    types: [opened]
 
 jobs:
   notify-telegram:
@@ -10,6 +10,9 @@ jobs:
     permissions:
       issues: read
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -20,11 +23,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install httpx
 
-      - name: Send Telegram notification (httpx)
+      - name: Send Telegram (via script .py)
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          CHAT_ID: "-1002597220683"
-          THREAD_ID: "6"
+          # ajuste conforme necessário:
+          TELEGRAM_CHAT_ID: "-1002597220683"
+          TELEGRAM_THREAD_ID: "6"
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ISSUE_URL: ${{ github.event.issue.html_url }}
@@ -32,60 +36,4 @@ jobs:
           ISSUE_BODY: ${{ github.event.issue.body }}
           REPO: ${{ github.repository }}
         run: |
-          python - <<'PY'
-          import os, httpx, textwrap, html
-
-          token = os.environ["TELEGRAM_BOT_TOKEN"]
-          chat_id = os.environ["CHAT_ID"]
-          thread_id = int(os.environ.get("THREAD_ID","0") or 0)
-
-          title   = os.environ.get("ISSUE_TITLE","(sem título)")
-          number  = os.environ.get("ISSUE_NUMBER","?")
-          url     = os.environ.get("ISSUE_URL","")
-          user    = os.environ.get("ISSUE_USER","?")
-          repo    = os.environ.get("REPO","?")
-          body    = os.environ.get("ISSUE_BODY") or ""
-          body = body.strip()
-
-          # Limita corpo para evitar mensagens gigantes no Telegram
-          max_chars = 700
-          if len(body) > max_chars:
-              body = body[:max_chars] + "…"
-
-          # Escapa para HTML (parse_mode=HTML)
-          def esc(s): return html.escape(s or "")
-
-          text = textwrap.dedent(f"""
-          🆕 <b>Issue aberta</b> em <b>{esc(repo)}</b>
-          <b>#{esc(str(number))}</b>: {esc(title)}
-          👤 Autor: {esc(user)}
-          🔗 <a href="{esc(url)}">{esc(url)}</a>
-
-          <b>Descrição</b>:
-          {esc(body) if body else '(sem descrição)'}
-          """).strip()
-
-          api = f"https://api.telegram.org/bot{token}/sendMessage"
-          payload = {
-              "chat_id": chat_id,
-              "text": text,
-              "parse_mode": "HTML",
-              "disable_web_page_preview": True,
-          }
-          if thread_id:
-              payload["message_thread_id"] = 6
-
-          with httpx.Client(timeout=20.0, follow_redirects=True) as client:
-              r = client.post(api, data=payload)
-              try:
-                  data = r.json()
-              except Exception:
-                  print("Resposta não-JSON:", r.text)
-                  raise SystemExit(1)
-
-              if not data.get("ok"):
-                  print("Falha ao enviar:", data)
-                  raise SystemExit(1)
-
-              print("Notificação enviada com sucesso.")
-          PY
+          python automations/telegram/issue.py
