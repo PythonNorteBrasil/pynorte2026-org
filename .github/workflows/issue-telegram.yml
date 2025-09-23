@@ -2,7 +2,7 @@ name: Notify Telegram on Issue Opened
 
 on:
   issues:
-    types: [opened, closed, reopened, unassigned, milestoned]
+    types: [opened, closed, reopened, assigned, milestoned, labeled]
 
 jobs:
   notify-telegram:
