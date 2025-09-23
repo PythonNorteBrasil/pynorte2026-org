@@ -22,7 +22,7 @@ def build_message() -> str:
     body    = (os.getenv("ISSUE_BODY") or "").strip()
     labels  = os.getenv("ISSUE_LABELS")
 
-    print(labels)
+    print("ISSUE_LABELS", labels)
 
     if any([title, number, url, user, repo, body]):
         if len(body) > 700:
