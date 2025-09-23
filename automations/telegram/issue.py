@@ -29,6 +29,7 @@ def build_message() -> str:
             body = body[:700] + "…"
         esc = lambda s: html.escape(s or "")
         return textwrap.dedent(f"""
+                               labels: {labels}</br>
         🆕 <b>Issue aberta</b> em <b>{esc(repo or '(repo?)')}</b>
         <b>#{esc(str(number or '?'))}</b>: {esc(title or '(sem título)')}
         👤 Autor: {esc(user or '?')}
