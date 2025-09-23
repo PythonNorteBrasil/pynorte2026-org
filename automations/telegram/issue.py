@@ -55,7 +55,7 @@ def main():
         sys.exit(2)
 
     chat_id = os.getenv("TELEGRAM_CHAT_ID", "-1002597220683")
-    thread_raw = os.getenv("TELEGRAM_THREAD_ID", "6")
+    thread_raw = 27 #os.getenv("TELEGRAM_THREAD_ID", "6")
     try:
         message_thread_id = int(thread_raw) if thread_raw else 0
     except ValueError:
@@ -64,6 +64,7 @@ def main():
     text = build_message()
 
     url = f"{API_BASE}/bot{token}/sendMessage"
+
     payload = {
         "chat_id": chat_id,
         "text": text,
