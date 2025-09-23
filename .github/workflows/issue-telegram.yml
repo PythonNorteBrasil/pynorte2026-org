@@ -26,15 +26,14 @@ jobs:
       - name: Call telegram script.py
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: "-1002597220683"
-          MESSAGE: "🔔 Nova issue #${{ github.event.issue.number }} aberta por ${{ github.event.issue.user.login }}: ${{ github.event.issue.title }}"
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ISSUE_URL: ${{ github.event.issue.html_url }}
           ISSUE_USER: ${{ github.event.issue.user.login }}
           ISSUE_BODY: ${{ github.event.issue.body }}
           REPO: ${{ github.repository }}
-          ISSUE_LABELS_JSON: ${{ toJson(github.event.issue.labels) }}
+          ISSUE_LABELS: ${{ github.event.issue.labels.*.name ) }}
 
         run: |
           python automations/telegram/issue.py
