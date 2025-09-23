@@ -38,7 +38,7 @@ THREADS_MAP = {
 
 TELEGRAM_USERS_MAP = {}
 
-message_thread_id = 27
+message_thread_id = THREADS_MAP.get(ISSUE_LABELS, 27)
 
 final_message = f"""
 labels: {ISSUE_LABELS}
