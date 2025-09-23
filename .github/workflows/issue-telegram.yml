@@ -33,7 +33,7 @@ jobs:
           ISSUE_USER: ${{ github.event.issue.user.login }}
           ISSUE_BODY: ${{ github.event.issue.body }}
           REPO: ${{ github.repository }}
-          ISSUE_LABELS: ${{ github.event.issue.labels.*.name ) }}
+          ISSUE_LABELS: ${{ github.event.issue.labels.*.name }}
 
         run: |
           python automations/telegram/issue.py
