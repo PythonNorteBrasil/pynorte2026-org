@@ -15,7 +15,7 @@ ISSUE_URL          = os.getenv("ISSUE_URL")
 ISSUE_USER         = os.getenv("ISSUE_USER")
 ISSUE_REPO         = os.getenv("REPO")
 ISSUE_BODY         = (os.getenv("ISSUE_BODY") or "").strip()
-ISSUE_LABELS  = os.getenv("ISSUE_LABELS")
+ISSUE_BODY_JSON  = os.getenv("ISSUE_BODY_JSON")
 
 API_URL = f"{API_BASE}/bot{TELEGRAM_TOKEN}/sendMessage"
 
@@ -40,8 +40,8 @@ TELEGRAM_USERS_MAP = {}
 
 message_thread_id = 27
 
-final_message = """
-labels: {ISSUE_LABELS}
+final_message = f"""
+labels: {ISSUE_BODY_JSON}
 """
 
 payload = {
