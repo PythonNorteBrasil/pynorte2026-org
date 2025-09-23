@@ -23,11 +23,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install httpx
 
-
-      - name: Extrair nomes dos labels
-        run: |
-          echo "ISSUE_LABELS=$(jq -r '[.issue.labels[].name] | join(", ")' \"$GITHUB_EVENT_PATH\")" >> $GITHUB_ENV
-
       - name: Call telegram script.py
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -39,7 +34,7 @@ jobs:
           ISSUE_USER: ${{ github.event.issue.user.login }}
           ISSUE_BODY: ${{ github.event.issue.body }}
           REPO: ${{ github.repository }}
-          ISSUE_LABELS: ${{ env.ISSUE_LABELS }}
+          ISSUE_LABELS_JSON: ${{ toJson(github.event.issue.labels) }}
 
         run: |
           python automations/telegram/issue.py

@@ -20,9 +20,9 @@ def build_message() -> str:
     user    = os.getenv("ISSUE_USER")
     repo    = os.getenv("REPO")
     body    = (os.getenv("ISSUE_BODY") or "").strip()
-    labels  = os.getenv("ISSUE_LABELS")
+    labels  = os.getenv("ISSUE_LABELS_JSON")
 
-    print("ISSUE_LABELS", labels)
+    print("ISSUE_LABELS_JSON", labels)
 
     if any([title, number, url, user, repo, body]):
         if len(body) > 700:
