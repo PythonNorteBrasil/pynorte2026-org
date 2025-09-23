@@ -49,6 +49,7 @@ payload = {
     "text": final_message,
     "parse_mode": "HTML",
     "disable_web_page_preview": True,
+    "message_thread_id": message_thread_id
 }
 
 with httpx.Client(timeout=20.0, follow_redirects=True) as client:
