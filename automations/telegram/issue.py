@@ -1,13 +1,4 @@
 #!/usr/bin/env python3
-# scripts/test_telegram_httpx.py
-# Envia uma notificação para o Telegram usando httpx.
-# Variáveis de ambiente suportadas:
-# - TELEGRAM_BOT_TOKEN (obrigatório)
-# - TELEGRAM_CHAT_ID (default: -1002597220683)
-# - TELEGRAM_THREAD_ID (default: 6; use vazio para não enviar em thread)
-# - MESSAGE (default: "hello")
-# Opcionalmente, pode montar a mensagem a partir de dados de issue:
-# - ISSUE_TITLE, ISSUE_NUMBER, ISSUE_URL, ISSUE_USER, ISSUE_BODY, REPO
 
 import os
 import sys
@@ -23,13 +14,15 @@ def build_message() -> str:
     if direct:
         return direct
 
-    # Caso contrário, tenta montar com dados de issue (se existirem)
     title   = os.getenv("ISSUE_TITLE")
     number  = os.getenv("ISSUE_NUMBER")
     url     = os.getenv("ISSUE_URL")
     user    = os.getenv("ISSUE_USER")
     repo    = os.getenv("REPO")
     body    = (os.getenv("ISSUE_BODY") or "").strip()
+    labels  = os.getenv("ISSUE_LABELS")
+
+    print(labels)
 
     if any([title, number, url, user, repo, body]):
         if len(body) > 700:
@@ -55,7 +48,8 @@ def main():
         sys.exit(2)
 
     chat_id = os.getenv("TELEGRAM_CHAT_ID", "-1002597220683")
-    thread_raw = 27 #os.getenv("TELEGRAM_THREAD_ID", "6")
+
+    thread_raw = 27
     try:
         message_thread_id = int(thread_raw) if thread_raw else 0
     except ValueError:

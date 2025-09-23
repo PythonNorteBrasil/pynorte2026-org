@@ -2,7 +2,7 @@ name: Notify Telegram on Issue Opened
 
 on:
   issues:
-    types: [opened]
+    types: [opened, closed, reopened, unassigned, milestoned]
 
 jobs:
   notify-telegram:
@@ -23,7 +23,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install httpx
 
-      - name: Send Telegram (via script .py)
+      - name: Call telegram script.py
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: "-1002597220683"
@@ -34,5 +34,7 @@ jobs:
           ISSUE_USER: ${{ github.event.issue.user.login }}
           ISSUE_BODY: ${{ github.event.issue.body }}
           REPO: ${{ github.repository }}
+          ISSUE_LABELS: ${{ env.ISSUE_LABELS }}
+
         run: |
           python automations/telegram/issue.py
