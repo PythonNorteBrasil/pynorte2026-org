@@ -2,6 +2,7 @@
 
 import os
 import httpx
+import html
 
 API_BASE = "https://api.telegram.org"
 
@@ -39,6 +40,28 @@ THREADS_MAP = {
 TELEGRAM_USERS_MAP = {}
 
 message_thread_id = THREADS_MAP.get(ISSUE_LABELS, 27)
+
+def esc(s: str) -> str:
+    return html.escape(s or "")
+
+labels_list = [l.strip() for l in ISSUE_LABELS.split(",") if l.strip()]
+labels_str = ", ".join(labels_list) if labels_list else "—"
+
+MAX_BODY_CHARS = 700
+
+body_preview = ISSUE_BODY[:MAX_BODY_CHARS]
+if len(ISSUE_BODY) > MAX_BODY_CHARS:
+    body_preview += "…"
+
+final_message = (
+    f"<b>🧩 Issue:</b> #{esc(ISSUE_NUMBER)} — {esc(ISSUE_TITLE)}\n"
+    f"<b>👤 Autor:</b> {esc(ISSUE_USER)}\n"
+    f"<b>🏷️ Labels:</b> {esc(labels_str)}\n"
+    + (f"<b>🗒️ Evento:</b> {esc(ISSUER_MESSAGE)}\n" if ISSUER_MESSAGE else "")
+    + (f"<b>🔗 Link:</b> <a href=\"{esc(ISSUE_URL)}\">{esc(ISSUE_URL)}</a>\n" if ISSUE_URL else "")
+    + ("\n<b>📝 Descrição</b>\n<pre>"
+       f"{esc(body_preview)}</pre>" if body_preview else "")
+)
 
 final_message = f"""
 labels: {ISSUE_LABELS}
