@@ -63,10 +63,6 @@ final_message = (
        f"{esc(body_preview)}</pre>" if body_preview else "")
 )
 
-final_message = f"""
-labels: {ISSUE_LABELS}
-"""
-
 payload = {
     "chat_id": TELEGRAM_CHAT_ID,
     "text": final_message,
