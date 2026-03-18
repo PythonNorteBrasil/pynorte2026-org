@@ -71,9 +71,9 @@ payload = {
     "message_thread_id": message_thread_id
 }
 
-with httpx.Client(timeout=20.0, follow_redirects=True) as client:
-    resp = client.post(API_URL, data=payload)
+#with httpx.Client(timeout=20.0, follow_redirects=True) as client:
+#    resp = client.post(API_URL, data=payload)
 
-    ctype = resp.headers.get("content-type", "")
+#    ctype = resp.headers.get("content-type", "")
 
-    data = resp.json() if ctype.startswith("application/json") else {"raw": resp.text}
+#    data = resp.json() if ctype.startswith("application/json") else {"raw": resp.text}
