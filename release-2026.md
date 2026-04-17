@@ -12,7 +12,7 @@ Realizada em caráter itinerante, a Python Norte escolhe a cada ano uma nova cid
 
 ### Muito Além do Código: Tecnologia para Todas as Pessoas
 
-A Python Norte quebra a barreira do "exclusivamente técnico". Um dos seus pilares fundamentais é a **democratização do acesso ao conhecimento**, o que significa que o evento é desenhado para todos os níveis: do curioso que nunca escreveu uma linha de código ao especialista em infraestruturas complexas. Com uma linguagem acessível e foco em comunidade, o encontro prova que a tecnologia é, antes de tudo, uma ferramenta humana de transformação social.
+A Python Norte quebra a barreira do "exclusivamente técnico". Um dos seus pilares fundamentais é a **democratização do acesso ao conhecimento**, o que significa que o evento é desenhado para todos os níveis: do curioso que nunca escreveu uma linha de código ao especialista em infraestruturas complexas. Com uma linguagem acessível e foco em comunidade, o encontro prova que a tecnologia e a educação são, antes de tudo, ferramentas humanas de transformação social.
 
 A diversidade é o coração do evento, com ações afirmativas que garantem o protagonismo de grupos sub-representados. Através de modalidades como o **PyDiversity** (vouchers para pessoas LGBTQIAPN+ e negras) e o **PyAmazônida** (apoio a povos do interior da Região Norte), a conferência assegura que a inovação na Amazônia seja plural, respeitosa e verdadeiramente representativa.
 
