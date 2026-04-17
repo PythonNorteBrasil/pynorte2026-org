@@ -45,6 +45,8 @@ As inscrições para a Python Norte 2026 já estão abertas e podem ser realizad
 - **Data:** 3 a 5 de julho de 2026
 - **Local:** UNAMA Ananindeua (BR 316, km 3, S/N - Coqueiro, Ananindeua - PA, 67113-901)
 - **Inscrições:** [2026.pythonnorte.org](https://2026.pythonnorte.org)
+- **CFP:** [2026.pythonnorte.org/cfp](https://2026.pythonnorte.org/cfp)
+- **Apoio e Patrocínio:** [2026.pythonnorte.org/patrocine](https://2026.pythonnorte.org/patrocine)
 - **Site Oficial:** [https://pythonnorte.org/](https://pythonnorte.org/)
 
 ---
