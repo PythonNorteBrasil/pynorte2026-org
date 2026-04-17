@@ -1,4 +1,4 @@
-![Banner Python Norte 2026](file:///home/itkcah/Desktop/pynorte2026-org/baner-pynorte2026.jpg)
+![Banner Python Norte 2026](baner-pynorte2026.jpg)
 
 # RELEASE DE IMPRENSA
 
